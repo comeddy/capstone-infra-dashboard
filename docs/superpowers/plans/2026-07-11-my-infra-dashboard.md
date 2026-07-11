@@ -723,4 +723,4 @@ git commit -m "feat(capstone): deploy dashboard and capture verification screens
 | 1:10–1:40 | Task 5 (Step 3 배포는 1:40 이전 필수 시작) |
 | 1:40–2:00 | Task 6 + 결과 공유 |
 
-빨리 끝낸 참가자: dashboard-builder 스킬(Task 4 Step 5)의 위젯 추가 절차를 활용해 자유 확장 (테마 변경, 라우팅 테이블 섹션 추가 등). Lambda Refresh·비용 위젯 스트레치는 진행자 재량으로 별도 안내.
+빨리 끝낸 참가자: dashboard-builder 스킬(Task 4 Step 5)의 위젯 추가 절차를 활용해 자유 확장 (테마 변경, 라우팅 테이블 섹션 추가 등). 정식 확장 모듈(VPC 토폴로지 in/out 다이어그램 + 비용 추정)은 [2026-07-11-topology-cost-extension.md](./2026-07-11-topology-cost-extension.md) 참조. Lambda Refresh 스트레치는 진행자 재량으로 별도 안내.

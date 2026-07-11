@@ -1,0 +1,23 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Capstone sample VPC (empty-account fallback)
+
+Resources:
+  SampleVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.99.0.0/16
+      Tags: [{ Key: Name, Value: capstone-sample-vpc }]
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SampleVpc
+      CidrBlock: 10.99.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      Tags: [{ Key: Name, Value: capstone-sample-a }]
+  SubnetC:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref SampleVpc
+      CidrBlock: 10.99.2.0/24
+      AvailabilityZone: !Select [2, !GetAZs ""]
+      Tags: [{ Key: Name, Value: capstone-sample-c }]

@@ -1,0 +1,23 @@
+{
+  "account_id": "1234********",
+  "region": "ap-northeast-2",
+  "scanned_at": "2026-07-11T00:00:00Z",
+  "vpcs": [
+    {
+      "id": "vpc-0sample000000001",
+      "cidr": "10.0.0.0/16",
+      "name": "sample-prod-vpc",
+      "subnets": [
+        { "id": "subnet-0sample0000000a1", "cidr": "10.0.1.0/24", "az": "ap-northeast-2a", "vpc_id": "vpc-0sample000000001" },
+        { "id": "subnet-0sample0000000c1", "cidr": "10.0.2.0/24", "az": "ap-northeast-2c", "vpc_id": "vpc-0sample000000001" }
+      ]
+    }
+  ],
+  "security_groups": [
+    { "id": "sg-0sample000000001", "name": "web-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [80, 443] },
+    { "id": "sg-0sample000000002", "name": "internal-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [] }
+  ],
+  "ec2_instances": [
+    { "id": "i-0sample0000000001", "type": "t3.micro", "state": "running", "subnet_id": "subnet-0sample0000000a1" }
+  ]
+}

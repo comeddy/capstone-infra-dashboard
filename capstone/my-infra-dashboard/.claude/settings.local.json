@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(aws sts get-caller-identity:*)",
+      "Bash(aws ec2 describe-vpcs:*)",
+      "Bash(aws ec2 describe-subnets:*)",
+      "Bash(aws ec2 describe-security-groups:*)",
+      "Bash(aws ec2 describe-instances:*)",
+      "Bash(aws cloudformation validate-template:*)",
+      "Bash(aws cloudformation deploy:*)",
+      "Bash(aws cloudformation describe-stacks:*)",
+      "Bash(aws s3 sync:*)",
+      "Bash(bash scripts/scan.sh:*)",
+      "Bash(jq:*)",
+      "Bash(python3:*)",
+      "Bash(curl:*)"
+    ],
+    "deny": [
+      "Bash(aws ec2 terminate-instances:*)",
+      "Bash(aws ec2 delete-*:*)",
+      "Bash(aws s3 rm:*)",
+      "Bash(aws cloudformation delete-stack:*)"
+    ]
+  }
+}

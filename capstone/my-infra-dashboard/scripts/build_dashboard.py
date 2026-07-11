@@ -67,6 +67,10 @@ def monthly_sum(items):
     return round(sum(nums), 1) if nums else None
 
 
+def has_unpriced(items):
+    return any(x.get("monthly_usd") is None for x in items)
+
+
 def svg_node(x, y, w, lines, stroke):
     txt = "".join(
         f'<text x="{x + 8}" y="{y + 16 + n * 14}" font-size="10" fill="#e2e8f0">{t}</text>'
@@ -191,7 +195,12 @@ def render(d):
 
     nats = d.get("nat_gateways", [])
     total = monthly_sum(ec2 + nats)
-    total_label = f"${total:,.1f}" if total is not None else "$—"
+    if total is None:
+        total_label = "$—"
+    elif has_unpriced(ec2 + nats):
+        total_label = f"${total:,.1f}*"
+    else:
+        total_label = f"${total:,.1f}"
     cards = [("VPC", len(vpcs)), ("서브넷", len(subnets)),
              ("EC2", len(ec2)), ("⚠ 오픈 SG", len(open_sgs)),
              ("월 추정 비용(USD)", total_label)]
@@ -222,14 +231,17 @@ def render(d):
         if not svg:
             continue
         vtotal = monthly_sum(v_ec2 + v_nats)
+        vtotal_label = fmt_usd(vtotal)
+        if vtotal is not None and has_unpriced(v_ec2 + v_nats):
+            vtotal_label += "*"
         topo.append(f'<h3>{esc(v.get("name"))} · {esc(v.get("id"))} · '
-                    f'월 추정 {fmt_usd(vtotal)}</h3>{svg}')
+                    f'월 추정 {vtotal_label}</h3>{svg}')
     topo_section = ""
     if topo:
         note = esc(d.get("pricing_note", ""))
         topo_section = ('<section><h2>네트워크 토폴로지 (in/out) &amp; 비용</h2>'
                         + "".join(topo)
-                        + f'<p class="meta">비용 기준: {note}</p></section>')
+                        + f'<p class="meta">비용 기준: {note} · * = 일부 리소스 단가 미조회</p></section>')
 
     return f"""<!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">

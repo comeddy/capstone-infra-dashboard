@@ -27,6 +27,7 @@ in/out 경로가 그려진 SVG, (b) EC2·NAT 노드별 월 추정 비용 배지,
 
 **route 판정 규칙**: 서브넷에 연결된(명시 연결 없으면 VPC main) 라우트 테이블의
 0.0.0.0/0 대상이 `igw-*`면 `public`, `nat-*`면 `private`, 그 외/없음이면 `isolated`.
+igw/nat 이외의 기본 라우트 — VGW/TGW/피어링/어플라이언스 ENI 등 — 는 설계상 전부 isolated로 표시된다. "인터넷 경로 없음"이 아니라 "igw/nat 경로 아님"의 의미.
 
 **비용 규칙**: 온디맨드 Linux/Shared 단가 × 730h = 월 추정(USD, 소수 1자리).
 running 상태 인스턴스만 비용 계산(stopped는 $0 + "stopped" 표기). NAT는 시간당

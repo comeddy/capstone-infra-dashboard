@@ -99,9 +99,10 @@ jq -n \
     ec2_instances: ($ec2 | map(. as $i | $i + {
       in_ports: ([$sgs[] | select(. as $g | ($i.sg_ids // []) | index($g.id)) | .open_ports[]] | unique),
       out: (([$sgs[] | select(. as $g | ($i.sg_ids // []) | index($g.id)) | .out]) as $outs
-            | if ($outs | index("all")) then "all"
-              elif ($outs | length) == 0 then "none"
-              else ($outs | unique | join(",")) end),
+            | ([$outs[] | split(",")[] | select(. != "none")] | unique) as $toks
+            | if ($toks | index("all")) then "all"
+              elif ($toks | length) == 0 then "none"
+              else ($toks | join(",")) end),
       monthly_usd: (if .state == "running" then monthly($prices[.type] // null) else 0 end)
     }))
   }' > data/inventory.json

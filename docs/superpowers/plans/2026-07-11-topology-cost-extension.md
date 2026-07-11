@@ -15,7 +15,7 @@
 - Pricing API는 항상 `--region us-east-1` 엔드포인트, 단가는 스캔 리전(`regionCode=$REGION`) 기준
 - 모든 Pricing 조회는 실패 시 `null` 폴백 — 스캔 전체가 죽지 않아야 함
 - 비용 = 온디맨드 단가 × 730h, 소수 1자리 반올림. running 인스턴스만 계산(stopped는 0). NAT는 시간당 요금만(데이터 처리 제외)
-- route 판정: 0.0.0.0/0 라우트가 igw-* → `public`, nat-* → `private`, 그 외 → `isolated` (명시 연결 없는 서브넷은 VPC main 라우트 테이블 상속)
+- route 판정: 0.0.0.0/0 라우트가 igw-* → `public`, nat-* → `private`, 그 외 → `isolated` (명시 연결 없는 서브넷은 VPC main 라우트 테이블 상속) (igw/nat 이외의 기본 라우트 — VGW/TGW/피어링/어플라이언스 ENI 등 — 는 설계상 전부 isolated로 표시된다. "인터넷 경로 없음"이 아니라 "igw/nat 경로 아님"의 의미)
 - in 화살표 색 `#38bdf8`, out 화살표 색 `#fb923c`
 
 ---
@@ -100,6 +100,8 @@ git commit -m "feat(capstone-ext): extend sample inventory with topology and cos
       "Bash(aws ec2 describe-route-tables:*)",
       "Bash(aws pricing get-products:*)",
 ```
+
+참고: Pricing 조회에는 IAM 액션 pricing:GetProducts가 필요하다(ec2:Describe*와 별개). 권한이 없으면 스캔은 죽지 않고 pricing_note가 "pricing unavailable", 비용이 "$—"로 표시된다.
 
 - [ ] **Step 2: scan.sh 전체 교체**
 
@@ -205,9 +207,10 @@ jq -n \
     ec2_instances: ($ec2 | map(. as $i | $i + {
       in_ports: ([$sgs[] | select(. as $g | ($i.sg_ids // []) | index($g.id)) | .open_ports[]] | unique),
       out: (([$sgs[] | select(. as $g | ($i.sg_ids // []) | index($g.id)) | .out]) as $outs
-            | if ($outs | index("all")) then "all"
-              elif ($outs | length) == 0 then "none"
-              else ($outs | unique | join(",")) end),
+            | ([$outs[] | split(",")[] | select(. != "none")] | unique) as $toks
+            | if ($toks | index("all")) then "all"
+              elif ($toks | length) == 0 then "none"
+              else ($toks | join(",")) end),
       monthly_usd: (if .state == "running" then monthly($prices[.type] // null) else 0 end)
     }))
   }' > data/inventory.json
@@ -279,6 +282,10 @@ def fmt_usd(v):
 def monthly_sum(items):
     nums = [x.get("monthly_usd") for x in items if isinstance(x.get("monthly_usd"), (int, float))]
     return round(sum(nums), 1) if nums else None
+
+
+def has_unpriced(items):
+    return any(x.get("monthly_usd") is None for x in items)
 
 
 def svg_node(x, y, w, lines, stroke):
@@ -392,6 +399,8 @@ def svg_topology(vpc, nats, instances):
 위 코드는 public 행을 먼저 그리므로(rows 순서), NAT는 public 서브넷 안에서 먼저 배치되어
 좌표가 확정된 후 private 행이 그려진다 — rows 순서 `(pub, rest)`가 이 가정을 보장한다.
 
+또한 NAT가 첫 칼럼이 아닌 경우 private→NAT 화살표가 중간 서브넷 박스 위를 가로지른다 — 다이어그램이 복잡한 멀티 AZ VPC에서는 시각적으로 겹칠 수 있으며, 이는 알려진 표시 한계다(정확성에는 영향 없음).
+
 - [ ] **Step 2: render() 확장** — 기존 `render()` 함수에서 세 곳 수정:
 
 (a) `cards` 리스트를 다음으로 교체 (비용 카드 추가):
@@ -399,7 +408,12 @@ def svg_topology(vpc, nats, instances):
 ```python
     nats = d.get("nat_gateways", [])
     total = monthly_sum(ec2 + nats)
-    total_label = f"${total:,.1f}" if total is not None else "$—"
+    if total is None:
+        total_label = "$—"
+    elif has_unpriced(ec2 + nats):
+        total_label = f"${total:,.1f}*"
+    else:
+        total_label = f"${total:,.1f}"
     cards = [("VPC", len(vpcs)), ("서브넷", len(subnets)),
              ("EC2", len(ec2)), ("⚠ 오픈 SG", len(open_sgs)),
              ("월 추정 비용(USD)", total_label)]
@@ -417,14 +431,17 @@ def svg_topology(vpc, nats, instances):
         if not svg:
             continue
         vtotal = monthly_sum(v_ec2 + v_nats)
+        vtotal_label = fmt_usd(vtotal)
+        if vtotal is not None and has_unpriced(v_ec2 + v_nats):
+            vtotal_label += "*"
         topo.append(f'<h3>{esc(v.get("name"))} · {esc(v.get("id"))} · '
-                    f'월 추정 {fmt_usd(vtotal)}</h3>{svg}')
+                    f'월 추정 {vtotal_label}</h3>{svg}')
     topo_section = ""
     if topo:
         note = esc(d.get("pricing_note", ""))
         topo_section = ('<section><h2>네트워크 토폴로지 (in/out) &amp; 비용</h2>'
                         + "".join(topo)
-                        + f'<p class="meta">비용 기준: {note}</p></section>')
+                        + f'<p class="meta">비용 기준: {note} · * = 일부 리소스 단가 미조회</p></section>')
 ```
 
 (c) f-string 본문에서 `<section class="cards">{card_html}</section>` 바로 다음 줄에 `{topo_section}` 삽입. CSS의 `h2` 규칙 아래에 다음 추가:
@@ -497,3 +514,5 @@ Expected: `네트워크 토폴로지` — 라이브 반영 확인
 git add capstone/my-infra-dashboard/docs/final-screenshot.png docs/superpowers/plans/2026-07-11-my-infra-dashboard.md
 git commit -m "feat(capstone-ext): deploy topology+cost dashboard, refresh sample screenshot"
 ```
+
+보안 주의: 배포된 대시보드는 인증 없이 공개되며, 이제 실계정의 라우팅 구조·오픈 포트·비용까지 노출한다. 리허설/데모 후 반드시 스택을 정리한다(버킷 비우기 → aws cloudformation delete-stack --stack-name my-infra-dashboard). 계정 마스킹(MASK_ACCOUNT=true 기본)은 유지한다.

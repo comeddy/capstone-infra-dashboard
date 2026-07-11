@@ -2,22 +2,28 @@
   "account_id": "1234********",
   "region": "ap-northeast-2",
   "scanned_at": "2026-07-11T00:00:00Z",
+  "pricing_note": "on-demand estimate, 730h/mo, data transfer excluded",
   "vpcs": [
     {
       "id": "vpc-0sample000000001",
       "cidr": "10.0.0.0/16",
       "name": "sample-prod-vpc",
+      "igw_id": "igw-0sample000000001",
       "subnets": [
-        { "id": "subnet-0sample0000000a1", "cidr": "10.0.1.0/24", "az": "ap-northeast-2a", "vpc_id": "vpc-0sample000000001" },
-        { "id": "subnet-0sample0000000c1", "cidr": "10.0.2.0/24", "az": "ap-northeast-2c", "vpc_id": "vpc-0sample000000001" }
+        { "id": "subnet-0sample0000000a1", "cidr": "10.0.1.0/24", "az": "ap-northeast-2a", "vpc_id": "vpc-0sample000000001", "route": "public" },
+        { "id": "subnet-0sample0000000c1", "cidr": "10.0.2.0/24", "az": "ap-northeast-2c", "vpc_id": "vpc-0sample000000001", "route": "private" }
       ]
     }
   ],
+  "nat_gateways": [
+    { "id": "nat-0sample000000001", "subnet_id": "subnet-0sample0000000a1", "vpc_id": "vpc-0sample000000001", "monthly_usd": 43.1 }
+  ],
   "security_groups": [
-    { "id": "sg-0sample000000001", "name": "web-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [80, 443] },
-    { "id": "sg-0sample000000002", "name": "internal-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [] }
+    { "id": "sg-0sample000000001", "name": "web-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [80, 443], "out": "all" },
+    { "id": "sg-0sample000000002", "name": "internal-sg", "vpc_id": "vpc-0sample000000001", "open_ports": [], "out": "all" }
   ],
   "ec2_instances": [
-    { "id": "i-0sample0000000001", "type": "t3.micro", "state": "running", "subnet_id": "subnet-0sample0000000a1" }
+    { "id": "i-0sample0000000001", "type": "t3.micro", "state": "running", "subnet_id": "subnet-0sample0000000a1", "sg_ids": ["sg-0sample000000001"], "in_ports": [80, 443], "out": "all", "monthly_usd": 9.5 },
+    { "id": "i-0sample0000000002", "type": "t3.small", "state": "running", "subnet_id": "subnet-0sample0000000c1", "sg_ids": ["sg-0sample000000002"], "in_ports": [], "out": "all", "monthly_usd": 19.0 }
   ]
 }

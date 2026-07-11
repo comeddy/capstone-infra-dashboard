@@ -14,3 +14,4 @@ AWS 계정 인프라를 스캔해 정적 HTML 대시보드로 시각화하고 S3
 - 계정 ID는 기본 마스킹 (`MASK_ACCOUNT=false`로 해제)
 - 대시보드는 단일 `site/index.html`, 외부 CDN 의존 금지
 - `data/inventory.json`이 없으면 빌더는 `data/sample-inventory.json`으로 폴백
+- .claude/settings.local.json은 보통 로컬 전용이지만, 이 프로젝트에서는 권한 실습 교육 자산으로 의도적으로 git에 커밋한다

@@ -104,7 +104,7 @@ def render(d):
 
 def main():
     d = load_inventory()
-    OUT.parent.mkdir(exist_ok=True)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(render(d))
     print(f"OK: {OUT} 생성 (source={d['source']})")
 

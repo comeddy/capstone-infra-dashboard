@@ -58,6 +58,7 @@ AWS 계정 인프라를 스캔해 정적 HTML 대시보드로 시각화하고 S3
 - 계정 ID는 기본 마스킹 (`MASK_ACCOUNT=false`로 해제)
 - 대시보드는 단일 `site/index.html`, 외부 CDN 의존 금지
 - `data/inventory.json`이 없으면 빌더는 `data/sample-inventory.json`으로 폴백
+- .claude/settings.local.json은 보통 로컬 전용이지만, 이 프로젝트에서는 권한 실습 교육 자산으로 의도적으로 git에 커밋한다
 ```
 
 - [ ] **Step 3: 읽기 전용 권한 allowlist 작성** (Ch3/Ch4 복습 포인트)
@@ -170,6 +171,8 @@ Expected: 1분 내 `Successfully created/updated stack - capstone-sample-vpc`
 git add capstone/my-infra-dashboard/
 git commit -m "feat(capstone): scaffold my-infra-dashboard with read-only permissions"
 ```
+
+주의: 전역 gitignore(`~/.config/git/ignore` 등)에 `**/.claude/settings.local.json` 패턴이 있으면 git이 이 파일을 **조용히 누락**시킨다. 커밋 후 `git show --stat HEAD`로 4개 파일이 모두 들어갔는지 확인하고, `settings.local.json`이 빠졌다면 `git add -f capstone/my-infra-dashboard/.claude/settings.local.json` 후 `git commit --amend --no-edit` 한다. (이 프로젝트에서는 이 파일이 공유 교육 자산이라 의도적으로 커밋한다)
 
 ---
 
@@ -439,7 +442,7 @@ def render(d):
 
 def main():
     d = load_inventory()
-    OUT.parent.mkdir(exist_ok=True)
+    OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(render(d))
     print(f"OK: {OUT} 생성 (source={d['source']})")
 

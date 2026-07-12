@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3 표준 라이브러리만. 배포는 기존 S3+CloudFront 재사용.
 
+> **모듈 순서 안내:** 이 플랜은 base(my-infra-dashboard) → topology-cost-extension → **ui-restyle** 순서의 3번째이자 최종 모듈이다. 리포지토리에 커밋된 `build_dashboard.py`와 `docs/final-screenshot.png`는 이 플랜까지 적용된 **최종 상태**이며, 앞선 두 플랜만 완료한 참가자의 대시보드는 이와 다른 (구 스타일) 모습이 정상이다. 이 플랜의 스크린샷 갱신 단계는 확장 플랜의 스크린샷 단계를 대체한다.
+
 ## Global Constraints
 
 - 스펙: `docs/superpowers/specs/2026-07-12-ui-restyle-design.md`의 토큰·매핑·불변 조건 전부

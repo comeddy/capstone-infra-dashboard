@@ -18,6 +18,8 @@ A Claude Code workshop capstone that scans your AWS account read-only and publis
 
 My Infra Dashboard is a 2-hour capstone project for the Claude Code Deep Dive Workshop, designed for infrastructure and network engineers. Driving Claude Code with a custom subagent and skill, participants scan their own AWS account (VPCs, subnets, security groups, EC2, IGW/NAT, route tables), estimate monthly costs via the Pricing API, and deploy the resulting dashboard behind CloudFront — no backend, no JavaScript, one HTML file.
 
+**Live demo:** [https://infra.zerojin.art/](https://infra.zerojin.art/) — the dashboard deployed from this repository, showing the maintainer's account with the account ID masked.
+
 ![Dashboard screenshot (sample data)](capstone/my-infra-dashboard/docs/final-screenshot.png)
 
 The project is built in three sequential modules, each with its own spec and step-by-step implementation plan. The committed code and screenshot reflect the final state after all three.
@@ -131,6 +133,8 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 ## 개요
 
 My Infra Dashboard는 인프라·네트워크 엔지니어를 위한 Claude Code Deep Dive Workshop의 2시간 캡스톤 프로젝트입니다. 참가자는 커스텀 서브에이전트와 스킬로 Claude Code를 지휘해 자신의 AWS 계정(VPC, 서브넷, 보안그룹, EC2, IGW/NAT, 라우트 테이블)을 스캔하고, Pricing API로 월 비용을 추정한 뒤, 결과 대시보드를 CloudFront 뒤에 배포합니다. 백엔드 없음, JavaScript 없음, HTML 파일 하나로 완결됩니다.
+
+**라이브 데모:** [https://infra.zerojin.art/](https://infra.zerojin.art/) — 이 리포지토리로 배포한 실제 대시보드입니다 (유지 관리자 계정, 계정 ID 마스킹 상태).
 
 ![대시보드 스크린샷 (샘플 데이터)](capstone/my-infra-dashboard/docs/final-screenshot.png)
 

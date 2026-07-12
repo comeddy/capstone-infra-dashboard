@@ -1,5 +1,6 @@
 # My Infra Dashboard
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 <a href="#english"><img src="https://img.shields.io/badge/lang-English-blue.svg" alt="English"></a>
 <a href="#korean"><img src="https://img.shields.io/badge/lang-한국어-red.svg" alt="Korean"></a>
 [![AWS](https://img.shields.io/badge/AWS-S3%20%2B%20CloudFront-orange.svg)]()
@@ -114,7 +115,7 @@ capstone-infra-dashboard/
 
 ## License
 
-No license has been specified yet. Contact the maintainer before reusing this material.
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
 ## Contact
 
@@ -228,7 +229,7 @@ capstone-infra-dashboard/
 
 ## 라이선스
 
-라이선스가 아직 지정되지 않았습니다. 자료를 재사용하려면 유지 관리자에게 문의해 주세요.
+이 프로젝트는 MIT 라이선스로 배포됩니다. 자세한 내용은 [LICENSE](LICENSE) 파일을 참고해 주세요.
 
 ## 연락처
 

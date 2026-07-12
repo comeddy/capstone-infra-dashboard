@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """data/inventory.json → site/index.html 단일 파일 대시보드 생성.
-inventory.json 부재 시 sample-inventory.json 폴백."""
+inventory.json 부재 시 sample-inventory.json 폴백. LLM Monitor 스타일 다크 테마."""
 import html
 import json
 from pathlib import Path
@@ -10,33 +10,90 @@ INV = ROOT / "data" / "inventory.json"
 SAMPLE = ROOT / "data" / "sample-inventory.json"
 OUT = ROOT / "site" / "index.html"
 
+ACCENT = "#3b82f6"
+ARROW_IN = "#60a5fa"
+ARROW_OUT = "#fb923c"
+OK = "#34d399"
+WARN = "#fbbf24"
+DANGER = "#fb7185"
+MUTED = "#6b7280"
+ROUTE_COLOR = {"public": OK, "private": WARN, "isolated": MUTED}
+ROUTE_PILL = {"public": "emerald", "private": "amber", "isolated": "gray"}
+
 CSS = """
-:root { --bg:#0f172a; --panel:#1e293b; --text:#e2e8f0; --sub:#94a3b8;
-        --accent:#38bdf8; --warn:#f87171; --ok:#4ade80; }
+:root { --bg:#030712; --panel:#111827; --line:#1f2937; --text:#f9fafb;
+        --sub:#9ca3af; --accent:#3b82f6; --ok:#34d399; --warn:#fbbf24;
+        --danger:#fb7185; }
 * { box-sizing:border-box; margin:0; }
 body { background:var(--bg); color:var(--text);
-       font-family:'Segoe UI',Pretendard,sans-serif; padding:2rem; }
-header h1 { color:var(--accent); font-size:1.6rem; }
-.meta { color:var(--sub); font-size:.85rem; margin-top:.3rem; }
-.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-         gap:1rem; margin:1.5rem 0; }
-.card { background:var(--panel); border-radius:12px; padding:1.2rem; text-align:center; }
-.card .num { font-size:2rem; font-weight:700; color:var(--accent); }
-.card .label { color:var(--sub); font-size:.85rem; margin-top:.3rem; }
+       font-family:'Segoe UI',Pretendard,sans-serif; padding:2rem;
+       font-variant-numeric:tabular-nums; }
+header { display:flex; justify-content:space-between; align-items:center;
+         flex-wrap:wrap; gap:.6rem; padding-bottom:1rem;
+         border-bottom:1px solid var(--line); }
+header h1 { font-size:1.35rem; }
+header h1 span { color:var(--accent); }
+.meta { display:flex; gap:.4rem; flex-wrap:wrap; }
+.chip { background:var(--panel); border:1px solid var(--line); color:var(--sub);
+        border-radius:999px; padding:.2rem .7rem; font-size:.75rem;
+        white-space:nowrap; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+         gap:1rem; margin:1.4rem 0; }
+.scard { background:var(--panel); border:1px solid var(--line);
+         border-radius:14px; padding:1.1rem 1.2rem; }
+.scard-head { display:flex; justify-content:space-between; align-items:center;
+              margin-bottom:.7rem; }
+.scard-head h3 { font-size:.95rem; }
+.scard-body { display:flex; align-items:center; gap:1.1rem; }
+.donut { width:104px; height:104px; flex:none; }
+.donut-c { fill:var(--text); font-size:20px; font-weight:700; }
+.donut-s { fill:var(--sub); font-size:9px; letter-spacing:.08em; }
+.stats { list-style:none; padding:0; font-size:.82rem; color:var(--sub);
+         display:flex; flex-direction:column; gap:.35rem; width:100%; }
+.stats li { display:flex; align-items:center; gap:.45rem; }
+.stats b { color:var(--text); margin-left:auto; padding-left:.8rem;
+           font-weight:600; }
+.dot { width:8px; height:8px; border-radius:50%; flex:none; }
 section { margin-bottom:2rem; }
-h2 { font-size:1.1rem; margin-bottom:.6rem; border-left:3px solid var(--accent);
-     padding-left:.5rem; }
-h3 { font-size:.95rem; color:var(--sub); margin:.8rem 0 .2rem; }
+h2 { font-size:1.02rem; margin:1.6rem 0 .7rem;
+     border-left:3px solid var(--accent); padding-left:.55rem; }
+details.vpc { background:var(--panel); border:1px solid var(--line);
+              border-radius:14px; margin-bottom:.8rem; overflow:hidden; }
+details.vpc summary { cursor:pointer; list-style:none; display:flex;
+                      align-items:center; gap:.9rem; padding:.85rem 1.1rem;
+                      flex-wrap:wrap; }
+details.vpc summary::-webkit-details-marker { display:none; }
+details.vpc summary::before { content:"▸"; color:var(--sub); }
+details.vpc[open] summary::before { content:"▾"; }
+.vpc-name { font-weight:600; }
+.vpc-id { color:var(--sub); font-size:.78rem; }
+.segbar { display:flex; height:6px; border-radius:999px; overflow:hidden;
+          background:var(--line); width:180px; }
+.vpc-cost { margin-left:auto; color:var(--warn); font-size:.85rem;
+            font-weight:600; }
+.vpc-body { padding:0 1.1rem 1rem; }
 table { width:100%; border-collapse:collapse; background:var(--panel);
-        border-radius:8px; overflow:hidden; font-size:.9rem; }
-th, td { padding:.55rem .8rem; text-align:left; }
-th { background:#334155; color:var(--sub); font-weight:600; }
-tr:nth-child(even) td { background:#243449; }
-.warn { background:var(--warn); color:#111; border-radius:6px;
-        padding:.1rem .5rem; margin-right:.3rem; font-weight:700; }
-.ok { color:var(--ok); }
+        border:1px solid var(--line); border-radius:12px; overflow:hidden;
+        font-size:.86rem; }
+th, td { padding:.55rem .9rem; text-align:left;
+         border-bottom:1px solid var(--line); }
+th { color:var(--sub); font-weight:600; font-size:.72rem;
+     text-transform:uppercase; letter-spacing:.06em; }
+tr:last-child td { border-bottom:none; }
+.pill { display:inline-block; border-radius:999px; padding:.12rem .6rem;
+        font-size:.74rem; font-weight:600; margin-right:.25rem; }
+.pill.rose { background:rgba(251,113,133,.15); color:var(--danger);
+             border:1px solid rgba(251,113,133,.35); }
+.pill.emerald { background:rgba(52,211,153,.12); color:var(--ok);
+                border:1px solid rgba(52,211,153,.3); }
+.pill.amber { background:rgba(251,191,36,.12); color:var(--warn);
+              border:1px solid rgba(251,191,36,.3); }
+.pill.gray { background:rgba(107,114,128,.15); color:var(--sub);
+             border:1px solid rgba(107,114,128,.35); }
 .empty { color:var(--sub); text-align:center; }
-footer { color:var(--sub); font-size:.8rem; text-align:center; margin-top:2rem; }
+.note { color:var(--sub); font-size:.78rem; margin-top:.6rem; }
+footer { color:var(--sub); font-size:.78rem; text-align:center;
+         margin-top:2rem; }
 """
 
 
@@ -51,11 +108,6 @@ def esc(v):
     return html.escape(str(v if v is not None else "-"))
 
 
-ARROW_IN = "#38bdf8"
-ARROW_OUT = "#fb923c"
-ROUTE_COLOR = {"public": "#4ade80", "private": "#fb923c", "isolated": "#64748b"}
-
-
 def fmt_usd(v):
     if v is None:
         return "$—"
@@ -63,7 +115,8 @@ def fmt_usd(v):
 
 
 def monthly_sum(items):
-    nums = [x.get("monthly_usd") for x in items if isinstance(x.get("monthly_usd"), (int, float))]
+    nums = [x.get("monthly_usd") for x in items
+            if isinstance(x.get("monthly_usd"), (int, float))]
     return round(sum(nums), 1) if nums else None
 
 
@@ -71,12 +124,61 @@ def has_unpriced(items):
     return any(x.get("monthly_usd") is None for x in items)
 
 
+def pill(text, kind):
+    return f'<span class="pill {kind}">{esc(text)}</span>'
+
+
+def table(headers, rows):
+    thead = "".join(f"<th>{esc(h)}</th>" for h in headers)
+    body = "".join(
+        "<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows
+    ) or f'<tr><td colspan="{len(headers)}" class="empty">리소스 없음</td></tr>'
+    return f"<table><thead><tr>{thead}</tr></thead><tbody>{body}</tbody></table>"
+
+
+def donut(segments, center, sub):
+    """segments: [(0..1 비율, 색)] — 인라인 SVG 도넛 링."""
+    size, stroke = 104, 12
+    r = (size - stroke) / 2
+    c = 2 * 3.14159265 * r
+    parts = [f'<circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" '
+             f'stroke="#1f2937" stroke-width="{stroke}"/>']
+    off = 0.0
+    for frac, color in segments:
+        if frac <= 0:
+            continue
+        parts.append(
+            f'<circle cx="{size / 2}" cy="{size / 2}" r="{r}" fill="none" '
+            f'stroke="{color}" stroke-width="{stroke}" '
+            f'stroke-dasharray="{frac * c:.2f} {c:.2f}" '
+            f'stroke-dashoffset="{-off * c:.2f}" '
+            f'transform="rotate(-90 {size / 2} {size / 2})"/>')
+        off += frac
+    parts.append(f'<text x="52" y="50" text-anchor="middle" '
+                 f'class="donut-c">{esc(center)}</text>')
+    parts.append(f'<text x="52" y="66" text-anchor="middle" '
+                 f'class="donut-s">{esc(sub)}</text>')
+    return (f'<svg viewBox="0 0 {size} {size}" class="donut">'
+            + "".join(parts) + "</svg>")
+
+
+def stat_card(title, badge, donut_svg, bullets):
+    """bullets: [(라벨, 값(안전한 문자열/숫자), 색)]"""
+    lis = "".join(
+        f'<li><span class="dot" style="background:{c}"></span>{esc(t)}<b>{v}</b></li>'
+        for t, v, c in bullets)
+    return (f'<div class="scard"><div class="scard-head"><h3>{esc(title)}</h3>'
+            f'<span class="chip">{esc(badge)}</span></div>'
+            f'<div class="scard-body">{donut_svg}<ul class="stats">{lis}</ul>'
+            f'</div></div>')
+
+
 def svg_node(x, y, w, lines, stroke):
     txt = "".join(
-        f'<text x="{x + 8}" y="{y + 16 + n * 14}" font-size="10" fill="#e2e8f0">{t}</text>'
-        for n, t in enumerate(lines))
+        f'<text x="{x + 8}" y="{y + 16 + n * 14}" font-size="10" '
+        f'fill="#e5e7eb">{t}</text>' for n, t in enumerate(lines))
     return (f'<rect x="{x}" y="{y}" width="{w}" height="50" rx="6" '
-            f'fill="#334155" stroke="{stroke}"/>{txt}')
+            f'fill="#1f2937" stroke="{stroke}"/>{txt}')
 
 
 def svg_arrow(x1, y1, x2, y2, color, marker):
@@ -116,32 +218,37 @@ def svg_topology(vpc, nats, instances):
     width = LANE + cols * (SUB_W + GAP)
     height = 30 + sum(row_hs) + GAP * len(rows)
 
-    p = [f'<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" '
+    p = [f'<svg viewBox="0 0 {width} {height}" '
+         f'xmlns="http://www.w3.org/2000/svg" '
          f'style="width:100%;max-width:{width}px;display:block;margin:.5rem 0">',
          '<defs>'
          f'<marker id="ain" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" '
-         f'markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{ARROW_IN}"/></marker>'
+         f'markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" '
+         f'fill="{ARROW_IN}"/></marker>'
          f'<marker id="aout" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" '
-         f'markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="{ARROW_OUT}"/></marker>'
+         f'markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" '
+         f'fill="{ARROW_OUT}"/></marker>'
          '</defs>']
 
     igw = vpc.get("igw_id")
     if igw:
         p.append(svg_node(10, 20, 120, ["Internet"], ARROW_IN))
         p.append(svg_node(10, 100, 120, ["IGW", esc(igw)], ARROW_IN))
-        p.append(svg_arrow(60, 70, 60, 98, ARROW_IN, "ain"))       # in: Internet→IGW
-        p.append(svg_arrow(80, 100, 80, 72, ARROW_OUT, "aout"))    # out: IGW→Internet
+        p.append(svg_arrow(60, 70, 60, 98, ARROW_IN, "ain"))
+        p.append(svg_arrow(80, 100, 80, 72, ARROW_OUT, "aout"))
 
     nat_pos = {}
     y = 20
     for r, rh in zip(rows, row_hs):
         for j, s in enumerate(r):
             x = LANE + j * (SUB_W + GAP)
-            color = ROUTE_COLOR.get(s.get("route"), "#64748b")
-            p.append(f'<rect x="{x}" y="{y}" width="{SUB_W}" height="{sub_h(s)}" rx="8" '
-                     f'fill="#1e293b" stroke="{color}" stroke-dasharray="4 3"/>')
-            p.append(f'<text x="{x + 8}" y="{y + 16}" font-size="10" fill="{color}">'
-                     f'{esc(s.get("id"))} · {esc(s.get("cidr"))} · {esc(s.get("route"))}</text>')
+            color = ROUTE_COLOR.get(s.get("route"), MUTED)
+            p.append(f'<rect x="{x}" y="{y}" width="{SUB_W}" height="{sub_h(s)}" '
+                     f'rx="8" fill="#0b1120" stroke="{color}" '
+                     f'stroke-dasharray="4 3"/>')
+            p.append(f'<text x="{x + 8}" y="{y + 16}" font-size="10" '
+                     f'fill="{color}">{esc(s.get("id"))} · {esc(s.get("cidr"))} · '
+                     f'{esc(s.get("route"))}</text>')
             ny = y + 26
             items, extra, snats = contents(s)
             for i in items:
@@ -151,39 +258,33 @@ def svg_topology(vpc, nats, instances):
                     cost += f' ({esc(i.get("state"))})'
                 p.append(svg_node(x + 10, ny, SUB_W - 20,
                                   [f'{esc(i.get("id"))} · {esc(i.get("type"))}',
-                                   f'in:{esc(ports)} out:{esc(i.get("out", "-"))}', cost],
-                                  "#38bdf8"))
+                                   f'in:{esc(ports)} out:{esc(i.get("out", "-"))}',
+                                   cost],
+                                  ARROW_IN))
                 ny += NODE
             if extra:
                 p.append(f'<text x="{x + 12}" y="{ny + 14}" font-size="10" '
-                         f'fill="#94a3b8">+{extra} more</text>')
+                         f'fill="#9ca3af">+{extra} more</text>')
                 ny += NODE
             for n in snats:
                 p.append(svg_node(x + 10, ny, SUB_W - 20,
-                                  ["NAT " + esc(n.get("id")), fmt_usd(n.get("monthly_usd"))],
+                                  ["NAT " + esc(n.get("id")),
+                                   fmt_usd(n.get("monthly_usd"))],
                                   ARROW_OUT))
                 nat_pos[n.get("id")] = (x + 10, ny + 25)
                 ny += NODE
             if igw and s.get("route") == "public":
-                p.append(svg_arrow(130, 120, x - 2, y + 20, ARROW_IN, "ain"))  # in: IGW→public
+                p.append(svg_arrow(130, 120, x - 2, y + 20, ARROW_IN, "ain"))
             if s.get("route") == "private" and vpc_nats:
                 tx, ty = nat_pos.get(vpc_nats[0].get("id"), (130, 125))
-                p.append(svg_arrow(x - 2, y + 40, tx, ty, ARROW_OUT, "aout"))  # out: private→NAT
+                p.append(svg_arrow(x - 2, y + 40, tx, ty, ARROW_OUT, "aout"))
         y += rh + GAP
     if igw and vpc_nats and vpc_nats[0].get("id") in nat_pos:
         tx, ty = nat_pos[vpc_nats[0].get("id")]
-        p.append(svg_arrow(tx, ty, 132, 125, ARROW_OUT, "aout"))               # out: NAT→IGW
+        p.append(svg_arrow(tx, ty, 132, 125, ARROW_OUT, "aout"))
 
     p.append("</svg>")
     return "".join(p)
-
-
-def table(headers, rows):
-    thead = "".join(f"<th>{esc(h)}</th>" for h in headers)
-    body = "".join(
-        "<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows
-    ) or f'<tr><td colspan="{len(headers)}" class="empty">리소스 없음</td></tr>'
-    return f"<table><thead><tr>{thead}</tr></thead><tbody>{body}</tbody></table>"
 
 
 def render(d):
@@ -191,71 +292,126 @@ def render(d):
     subnets = [s for v in vpcs for s in v.get("subnets", [])]
     sgs = d.get("security_groups", [])
     ec2 = d.get("ec2_instances", [])
+    nats = d.get("nat_gateways", [])
     open_sgs = [g for g in sgs if g.get("open_ports")]
 
-    nats = d.get("nat_gateways", [])
-    total = monthly_sum(ec2 + nats)
-    if total is None:
-        total_label = "$—"
-    elif has_unpriced(ec2 + nats):
-        total_label = f"${total:,.1f}*"
-    else:
-        total_label = f"${total:,.1f}"
-    cards = [("VPC", len(vpcs)), ("서브넷", len(subnets)),
-             ("EC2", len(ec2)), ("⚠ 오픈 SG", len(open_sgs)),
-             ("월 추정 비용(USD)", total_label)]
-    card_html = "".join(
-        f'<div class="card"><div class="num">{n}</div>'
-        f'<div class="label">{esc(t)}</div></div>' for t, n in cards)
+    rc = {"public": 0, "private": 0, "isolated": 0}
+    for s in subnets:
+        rc[s.get("route") if s.get("route") in rc else "isolated"] += 1
+    n_sub = len(subnets)
+    net_donut = donut(
+        [(rc["public"] / n_sub if n_sub else 0, OK),
+         (rc["private"] / n_sub if n_sub else 0, WARN),
+         (rc["isolated"] / n_sub if n_sub else 0, MUTED)],
+        str(n_sub) if n_sub else "—", "SUBNETS")
 
-    vpc_rows = [[esc(v.get("name")), esc(v.get("id")), esc(v.get("cidr")),
-                 str(len(v.get("subnets", [])))] for v in vpcs]
-    subnet_rows = [[esc(s.get("id")), esc(s.get("cidr")), esc(s.get("az")),
-                    esc(s.get("vpc_id"))] for s in subnets]
-    ec2_rows = [[esc(i.get("id")), esc(i.get("type")), esc(i.get("state")),
-                 esc(i.get("subnet_id"))] for i in ec2]
-    sg_rows = []
-    for g in sgs:
-        ports = g.get("open_ports") or []
-        badge = "".join(f'<span class="warn">{esc(p)}</span>' for p in ports) \
-            or '<span class="ok">없음</span>'
-        sg_rows.append([esc(g.get("name")), esc(g.get("id")),
-                        esc(g.get("vpc_id")), badge])
+    running = [i for i in ec2 if i.get("state") == "running"]
+    run_pct = f"{round(100 * len(running) / len(ec2))}%" if ec2 else "—"
+    comp_donut = donut(
+        [(len(running) / len(ec2) if ec2 else 0, OK)], run_pct, "RUNNING")
+
+    total = monthly_sum(ec2 + nats)
+    total_label = ("$—" if total is None
+                   else f"${total:,.1f}"
+                        + ("*" if has_unpriced(ec2 + nats) else ""))
+
+    closed = len(sgs) - len(open_sgs)
+    closed_pct = f"{round(100 * closed / len(sgs))}%" if sgs else "—"
+    sec_donut = donut(
+        [(closed / len(sgs) if sgs else 0, OK),
+         (len(open_sgs) / len(sgs) if sgs else 0, DANGER)],
+        closed_pct, "HEALTH")
+    open_ports_all = sorted({p for g in open_sgs
+                             for p in g.get("open_ports", [])}, key=str)
+    ports_label = ", ".join(str(p) for p in open_ports_all[:6]) or "-"
+
+    cards = "".join([
+        stat_card("네트워크", f"VPC {len(vpcs)}", net_donut,
+                  [("Public", rc["public"], OK),
+                   ("Private", rc["private"], WARN),
+                   ("Isolated", rc["isolated"], MUTED),
+                   ("NAT GW", len(nats), ARROW_OUT)]),
+        stat_card("컴퓨트", f"EC2 {len(ec2)}", comp_donut,
+                  [("Running", len(running), OK),
+                   ("Stopped", len(ec2) - len(running), MUTED),
+                   ("월 추정 비용(USD)", total_label, WARN)]),
+        stat_card("보안", f"SG {len(sgs)}", sec_donut,
+                  [("오픈 SG (0.0.0.0/0)", len(open_sgs), DANGER),
+                   ("전체 SG", len(sgs), MUTED),
+                   ("오픈 포트", esc(ports_label), WARN)]),
+    ])
 
     topo = []
     for v in vpcs:
-        sub_ids = {s.get("id") for s in v.get("subnets", [])}
+        subs = v.get("subnets", [])
+        sub_ids = {s.get("id") for s in subs}
         v_ec2 = [i for i in ec2 if i.get("subnet_id") in sub_ids]
         v_nats = [n for n in nats if n.get("vpc_id") == v.get("id")]
         svg = svg_topology(v, nats, v_ec2)
         if not svg:
             continue
+        vc = {"public": 0, "private": 0, "isolated": 0}
+        for s in subs:
+            vc[s.get("route") if s.get("route") in vc else "isolated"] += 1
+        seg = "".join(f'<span style="flex:{n};background:{c}"></span>'
+                      for n, c in [(vc["public"], OK), (vc["private"], WARN),
+                                   (vc["isolated"], MUTED)] if n > 0)
         vtotal = monthly_sum(v_ec2 + v_nats)
-        vtotal_label = fmt_usd(vtotal)
+        vcost = fmt_usd(vtotal)
         if vtotal is not None and has_unpriced(v_ec2 + v_nats):
-            vtotal_label += "*"
-        topo.append(f'<h3>{esc(v.get("name"))} · {esc(v.get("id"))} · '
-                    f'월 추정 {vtotal_label}</h3>{svg}')
+            vcost += "*"
+        topo.append(
+            f'<details class="vpc" open><summary>'
+            f'<span class="vpc-name">{esc(v.get("name"))}</span>'
+            f'<span class="vpc-id">{esc(v.get("id"))}</span>'
+            f'<div class="segbar">{seg}</div>'
+            f'<span class="chip">서브넷 {len(subs)} · EC2 {len(v_ec2)} · '
+            f'NAT {len(v_nats)}</span>'
+            f'<span class="vpc-cost">{vcost}</span></summary>'
+            f'<div class="vpc-body">{svg}</div></details>')
     topo_section = ""
     if topo:
         note = esc(d.get("pricing_note", ""))
         topo_section = ('<section><h2>네트워크 토폴로지 (in/out) &amp; 비용</h2>'
                         + "".join(topo)
-                        + f'<p class="meta">비용 기준: {note} · * = 일부 리소스 단가 미조회</p></section>')
+                        + f'<p class="note">비용 기준: {note} · '
+                          f'* = 일부 리소스 단가 미조회</p></section>')
+
+    vpc_rows = [[esc(v.get("name")), esc(v.get("id")), esc(v.get("cidr")),
+                 str(len(v.get("subnets", [])))] for v in vpcs]
+    subnet_rows = [[esc(s.get("id")), esc(s.get("cidr")), esc(s.get("az")),
+                    pill(s.get("route", "-"),
+                         ROUTE_PILL.get(s.get("route"), "gray")),
+                    esc(s.get("vpc_id"))] for s in subnets]
+    ec2_rows = []
+    for i in ec2:
+        state = i.get("state", "-")
+        ec2_rows.append([esc(i.get("id")), esc(i.get("type")),
+                         pill(state, "emerald" if state == "running" else "gray"),
+                         esc(i.get("subnet_id")),
+                         fmt_usd(i.get("monthly_usd"))])
+    sg_rows = []
+    for g in sgs:
+        ports = g.get("open_ports") or []
+        badge = "".join(pill(p, "rose") for p in ports) or pill("없음", "emerald")
+        sg_rows.append([esc(g.get("name")), esc(g.get("id")),
+                        esc(g.get("vpc_id")), badge])
 
     return f"""<!DOCTYPE html>
 <html lang="ko"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>My Infra Dashboard</title><style>{CSS}</style></head>
 <body>
-<header><h1>☁ My Infra Dashboard</h1>
-<p class="meta">계정 {esc(d.get("account_id"))} · {esc(d.get("region"))} ·
-스캔 {esc(d.get("scanned_at"))} · 데이터: {esc(d.get("source"))}</p></header>
-<section class="cards">{card_html}</section>
+<header><h1><span>☁</span> My Infra Dashboard</h1>
+<div class="meta"><span class="chip">계정 {esc(d.get("account_id"))}</span>
+<span class="chip">{esc(d.get("region"))}</span>
+<span class="chip">스캔 {esc(d.get("scanned_at"))}</span>
+<span class="chip">데이터: {esc(d.get("source"))}</span></div></header>
+<div class="cards">{cards}</div>
 {topo_section}
 <section><h2>VPC</h2>{table(["Name", "VPC ID", "CIDR", "서브넷 수"], vpc_rows)}</section>
-<section><h2>서브넷</h2>{table(["Subnet ID", "CIDR", "AZ", "VPC"], subnet_rows)}</section>
-<section><h2>EC2 인스턴스</h2>{table(["Instance ID", "Type", "State", "Subnet"], ec2_rows)}</section>
+<section><h2>서브넷</h2>{table(["Subnet ID", "CIDR", "AZ", "Route", "VPC"], subnet_rows)}</section>
+<section><h2>EC2 인스턴스</h2>{table(["Instance ID", "Type", "State", "Subnet", "월 추정"], ec2_rows)}</section>
 <section><h2>보안그룹 — 0.0.0.0/0 오픈 포트</h2>{table(["Name", "Group ID", "VPC", "오픈 포트"], sg_rows)}</section>
 <footer>Generated with Claude Code · Capstone 2026</footer>
 </body></html>"""

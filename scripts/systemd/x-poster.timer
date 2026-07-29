@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily X posting (01:10 UTC, after the 00:00 UTC cloud curation routine and the 01:00 Bluesky poster)
+
+[Timer]
+OnCalendar=*-*-* 01:10:00
+Persistent=true
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

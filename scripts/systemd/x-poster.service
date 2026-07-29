@@ -1,0 +1,6 @@
+[Unit]
+Description=Post pending X drafts from capstone-infra-dashboard
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash /home/ec2-user/capstone-infra-dashboard/scripts/x-post-daily.sh

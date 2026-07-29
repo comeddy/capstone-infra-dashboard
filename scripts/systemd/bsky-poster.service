@@ -3,4 +3,4 @@ Description=Post pending Bluesky drafts from capstone-infra-dashboard
 
 [Service]
 Type=oneshot
-ExecStart=/home/ec2-user/capstone-infra-dashboard/scripts/bsky-post-daily.sh
+ExecStart=/usr/bin/bash /home/ec2-user/capstone-infra-dashboard/scripts/bsky-post-daily.sh

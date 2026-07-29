@@ -56,7 +56,10 @@ def url_facets(text):
 def main():
     draft = sys.argv[1] if len(sys.argv) > 1 else "bsky-news-draft.md"
     dry_run = "--dry-run" in sys.argv
+    lang = "en" if draft.endswith(".en.md") else "ko"
     posts = parse_draft(draft)
+    if not posts:
+        sys.exit("오류: 초안에 게시할 포스트가 없습니다.")
 
     print(f"{len(posts)}개 포스트 스레드:")
     for i, p in enumerate(posts, 1):
@@ -78,7 +81,7 @@ def main():
             "text": text,
             "createdAt": __import__("datetime").datetime.now(
                 __import__("datetime").timezone.utc).isoformat().replace("+00:00", "Z"),
-            "langs": ["ko"],
+            "langs": [lang],
         }
         if facets := url_facets(text):
             record["facets"] = facets
